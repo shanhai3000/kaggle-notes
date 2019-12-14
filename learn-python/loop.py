@@ -38,3 +38,10 @@ aa = [{'name': 'Peach', 'items': ['green shell', 'banana', 'green shell'], 'fini
       {'name': 'DK', 'items': ['blue shell', 'star'], 'finish': 1}]
 
 print(best_items(aa))
+
+d = {}
+t = ("name", "age")
+l = [1, 2, 3]
+d[t] = l
+# d[l] = t   error, list is unhashable type
+print(d)

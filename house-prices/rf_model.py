@@ -29,6 +29,7 @@ def get_data_set():
     # 或简单理解为axis=0影响符合条件下的整行，axis=1影响符合条件下的整列
     # X_full.drop(['SalePrice'], axis=1, inplace=True) #axis=1: remove名字为'SalePrice'的整个列
     numerical_features = data_set.select_dtypes(exclude=['object']).columns
+    m = [col for col in X_full if X_full[col].isnull().any()]
 
 
 def train_and_valid():
@@ -115,16 +116,22 @@ def train_and_valid_with_object_values():
     # prepare, Remove rows with missing target, separate target from predictors
     X.dropna(axis=0, subset=['SalePrice'], inplace=True)
 
-    # drop columns with missing values
-    cols_with_missing_val = [col for col in all_columns if X[col].isnull().any()]
-    X.drop(columns=cols_with_missing_val, axis=1, inplace=True)
+    # drop columns with missing values from object value columns
+    object_val_cols = X.select_dtypes(include=['object']).columns
+    object_val_cols_with_missing_val = [col for col in object_val_cols if X[col].isnull().any()]
+    object_val_cols = list(set(object_val_cols) - set(object_val_cols_with_missing_val))
+    X.drop(columns=object_val_cols_with_missing_val, axis=1, inplace=True)
     # prepare end  # test数据集也需要drop cols_with_missing_val
     y = X.SalePrice
     X.drop(['SalePrice'], axis=1, inplace=True)
 
-    # 1 step: 拆分数据集为 train/test两部分
+    # step 1: 拆分数据集为 train/test两部分
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0, train_size=0.8, test_size=0.2)
     rf = RandomForestRegressor(random_state=0, n_estimators=100)
+
+    # step 2: encode object_val_cols
+    low_cardinality_cols = [col for col in object_val_cols if X_train[col].nunique() < 10]
+    print(low_cardinality_cols)
 
     numerical_features = X.select_dtypes(exclude=['object']).columns
 
@@ -183,7 +190,7 @@ def encode_and_impute_train():
     X = pd.read_csv("./data-set/train.csv")
     test_data = pd.read_csv("./data-set/test.csv")  # type: pd.DataFrame
     # step 1, drop nan target rows
-    X = X.dropna(subset=['SalePrice'], axis=0)
+    X.dropna(subset=['SalePrice'], axis=0, inplace=1)
     y = X.SalePrice
 
     object_X_cols = X.select_dtypes(include=['object']).columns
@@ -199,7 +206,7 @@ def encode_and_impute_train():
     object_cols = list(set(object_cols) - set(missing_val_cols))
 
     # step 3, encode
-    # step 3-1: label encoding
+    # step 3-1: label encoding (object==>numerical)
     good_label_cols = [col for col in object_cols if set(X[col]) == set(test_data[col])]
     bad_label_cols = list(set(object_cols) - set(good_label_cols))
     label_encoder = LabelEncoder()
@@ -210,9 +217,12 @@ def encode_and_impute_train():
     test_data = test_data.drop(columns=bad_label_cols, axis=1)
     object_cols = list(set(object_cols) - set(bad_label_cols))
     # step 3-2, encode: low cardinality--oneHotEncode; high cardinality--labelEncode
-    object_nunique = list(map(lambda col: X[col].nunique(), object_cols))
-    d = dict(zip(object_cols, object_nunique))
     # step 3-2-1: low cardinality--oneHotEncode
+    object_nunique = list(map(lambda i: X[i].nunique(), object_cols))
+    n = dict(zip(object_cols, object_nunique))
+    n = sorted(n.items(), key=lambda i: i[1])
+    obj_encoded_col_num = [i for i in list(map(lambda i: i[1], n)) if i < 10]
+    ## low_cardinality_cols 15个列==>69个列
     low_cardinality_cols = [col for col in object_cols if X[col].nunique() < 10]
     high_cardinality_cols = list(set(object_cols) - set(low_cardinality_cols))
     OH_encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
@@ -220,7 +230,6 @@ def encode_and_impute_train():
     OH_test_col = pd.DataFrame(OH_encoder.transform(test_data[low_cardinality_cols]))
     OH_X_col.index = X.index
     OH_test_col.index = test_data.index
-
     # step 4, impute the missing value
     my_imputer = SimpleImputer(strategy='median')
     numerical_X = X.select_dtypes(exclude=['object'])
@@ -243,6 +252,8 @@ def encode_and_impute_train():
     output.to_csv('./submission.csv', index=False)
     ## 16037.12085
 
+
 # print(train_and_valid_with_object_values())  # output = 18237.842397260272
 # label_encoder 17575.291883561644
+# train_and_valid_with_object_values()
 encode_and_impute_train()

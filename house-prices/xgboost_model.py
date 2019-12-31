@@ -2,7 +2,6 @@
 """
 @Author  : shan hai
 @Time    : 2019/12/27 2:58 AM
-@Email   : shanhai3000@gmail.com
 """
 
 # extreme gradient boosting
@@ -21,7 +20,6 @@ X.dropna(subset=['SalePrice'], axis=0, inplace=True)
 y = X.SalePrice
 X.drop(columns=['SalePrice'], axis=1, inplace=True)
 numerical_cols = list(X.select_dtypes(exclude=['object']).columns)
-numerical_X = X[numerical_cols].copy()
 categorical_cols = X.select_dtypes(include=['object']).columns
 
 numerical_transformer = SimpleImputer(strategy='median')

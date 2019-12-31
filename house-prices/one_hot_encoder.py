@@ -2,7 +2,6 @@
 """
 @Author  : shan hai
 @Time    : 2019/12/25 7:30 PM
-@Email   : shanhai3000@gmail.com
 """
 import pandas as pd
 from sklearn.preprocessing import OneHotEncoder

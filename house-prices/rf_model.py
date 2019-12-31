@@ -2,7 +2,6 @@
 """
 @Author  : shan hai
 @Time    : 2019/12/14 10:17 PM
-@Email   : shanhai3000@gmail.com
 """
 
 import pandas as pd
